@@ -5,6 +5,7 @@ import com.chedi.authentication.dtos.UserDto;
 import com.chedi.authentication.entities.User;
 import com.chedi.authentication.enums.UserRole;
 import com.chedi.authentication.repositories.UserRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,19 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthServiceImpl implements AuthService{
     private UserRepository userRepository;
+    @PostConstruct
+    public void createAdminAccount(){
+        User adminAccount=this.userRepository.findByRole(UserRole.Admin);
+        if(adminAccount==null){
+            User newadminAccount=new User();
+            newadminAccount.setEmail("admin@gmail.com");
+            newadminAccount.setPassword(new BCryptPasswordEncoder().encode("admin"));
+            newadminAccount.setRole(UserRole.Admin);
+            newadminAccount.setNom("admin");
+            this.userRepository.save(newadminAccount);
+
+        }
+    }
 @Autowired
     public AuthServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;

@@ -72,16 +72,18 @@ authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authe
         }catch (BadCredentialsException e){
             logger.info(String.valueOf(e));
             throw new BadCredentialsException("incorrect username or password");
-
         }
         final UserDetails userDetails=userService.userDetailsService().loadUserByUsername(authenticationRequest.getEmail());
         Optional<User> optionalUser=userRepository.findFirstByEmail(userDetails.getUsername());
         final String jwt=JwtUtil.generateToken(userDetails);
+        logger.info(jwt);
         AuthenticationResponse authenticationResponse=new AuthenticationResponse();
+        if(optionalUser.isPresent()) {
             authenticationResponse.setJwt(jwt);
             authenticationResponse.setUserId(optionalUser.get().getId());
             authenticationResponse.setUserRole(optionalUser.get().getRole());
             logger.info(String.valueOf(optionalUser));
+        }
         return authenticationResponse;
     }
 }

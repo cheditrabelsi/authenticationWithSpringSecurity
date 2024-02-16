@@ -38,7 +38,6 @@ public class jwtUtil {
         final Claims claims = getAllClaimsFromToken(token);
         return claimsResolver.apply(claims);
     }
-
     private Key GetSigninKey() {
         byte[] key = Decoders.BASE64.decode(ToDecode);
         return Keys.hmacShaKeyFor(key);
@@ -61,9 +60,8 @@ public class jwtUtil {
     public String generateToken(UserDetails userDetails) {
 
         Map<String, Object> claims = new HashMap<>();
-
+        claims.put("Role", userDetails.getAuthorities());
         return generateToken(claims, userDetails.getUsername());
-
     }
 
     private String generateToken(Map<String, Object> claims, String subject) {
@@ -73,7 +71,7 @@ public class jwtUtil {
                 .setSubject(subject)
                 .setIssuedAt(StartDate)
                 .setExpiration(ExpirationDate)
-                .signWith(GetSigninKey(), SignatureAlgorithm.HS256)
+                .signWith(GetSigninKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
 
@@ -87,6 +85,6 @@ public class jwtUtil {
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis()+604800000))
-                .signWith(GetSigninKey(),SignatureAlgorithm.HS256).compact();
+                .signWith(GetSigninKey(),SignatureAlgorithm.HS512).compact();
     }
 }

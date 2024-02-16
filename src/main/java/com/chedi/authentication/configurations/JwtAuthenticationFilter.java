@@ -21,33 +21,47 @@ import java.io.IOException;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+
     @Autowired
-    private jwtUtil JwtUtil;
+    private jwtUtil jwtUtil;
+
     @Autowired
     private UserService userService;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-final String authHeader=request.getHeader("Authorization");
-final String jwt;
-final String userEmail;
-logger.info(authHeader);
-if(StringUtils.isEmpty(authHeader)||StringUtils.startsWith(authHeader,"Bearer")){
-    filterChain.doFilter(request,response);
-    return;
-}
-jwt=authHeader.substring(7);
-userEmail=JwtUtil.getUserNameFromToken(jwt);
-if(StringUtils.isNotEmpty(userEmail)&& SecurityContextHolder.getContext().getAuthentication()==null){
-    UserDetails userDetails=userService.userDetailsService().loadUserByUsername(userEmail);
-    if(JwtUtil.validateToken(jwt,userDetails)) {
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                userDetails, null, userDetails.getAuthorities());
-        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-        context.setAuthentication(authToken);
-        SecurityContextHolder.setContext(context);
+        final String authHeader = request.getHeader(AUTHORIZATION_HEADER);
+
+        if (StringUtils.isEmpty(authHeader) || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String jwt = authHeader.substring(7);
+        String userEmail = jwtUtil.getUserNameFromToken(jwt);
+
+        try {
+            if (StringUtils.isNotEmpty(userEmail) && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userService.userDetailsService().loadUserByUsername(userEmail);
+
+                if (jwtUtil.validateToken(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+        } catch (Exception e) {
+
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
+            return;
+        }
+
+        filterChain.doFilter(request, response);
     }
 }
-filterChain.doFilter(request,response);
-    }
-}
+
